@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>XBO.emoney Fee Savings Calculator</title>
-<meta name="description" content="See how much you could save on business banking with XBO.emoney. Compare fees against Revolut, Wise, Airwallex, and traditional banks.">
+<meta name="description" content="See how much you could save on business banking with XBO.emoney vs Revolut, Wise, Airwallex, and traditional banks.">
 <meta property="og:title" content="XBO.emoney Fee Savings Calculator">
-<meta property="og:description" content="How much are you overpaying for business banking? Compare XBO.emoney vs Revolut, Wise, Airwallex, and traditional banks.">
+<meta property="og:description" content="How much are you overpaying for business banking? Find out in 30 seconds.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -14,8 +14,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',-apple-system,sans-serif;background:#0f0a1f;color:#e2e0f0;min-height:100vh;-webkit-font-smoothing:antialiased}
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:rgba(99,102,241,0.15);outline:none;cursor:pointer}
+body{font-family:'Inter',-apple-system,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,0.4)}
 input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);cursor:pointer;border:none}
 ::selection{background:rgba(99,102,241,0.3)}
@@ -26,40 +26,62 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <script type="text/babel">
 const {useState,useRef} = React;
 
-// Accurate fee data based on published pricing (early 2026)
-// Revolut: Grow plan (most common SME plan)
-// Wise: standard business (no monthly, pay per use)
-// Airwallex: Explore plan
-// Bank: composite NatWest/Santander/HSBC averages
+const themes = {
+  light: {
+    bg:"#f8f7fc",bgGrad:"linear-gradient(180deg,#f0eef8 0%,#f8f7fc 30%)",
+    card:"rgba(99,102,241,0.04)",cardBorder:"rgba(99,102,241,0.12)",
+    text:"#1a1a2e",textSoft:"#555",textMuted:"#999",
+    headerBg:"rgba(255,255,255,0.9)",headerBorder:"rgba(99,102,241,0.1)",
+    inputBg:"rgba(99,102,241,0.05)",inputBorder:"rgba(99,102,241,0.15)",
+    inputText:"#1a1a2e",valueBg:"rgba(99,102,241,0.08)",valueText:"#6366f1",
+    tableBg:"rgba(99,102,241,0.03)",tableHead:"rgba(99,102,241,0.08)",
+    previewBg:"rgba(99,102,241,0.05)",barBg:"rgba(99,102,241,0.06)",
+    greenBg:"rgba(34,197,94,0.05)",greenBorder:"rgba(34,197,94,0.15)",
+    purpleBg:"rgba(139,92,246,0.05)",purpleBorder:"rgba(139,92,246,0.15)",
+    yellowBg:"rgba(245,158,11,0.05)",yellowBorder:"rgba(245,158,11,0.12)",
+    sliderTrack:"rgba(99,102,241,0.12)",rowBorder:"rgba(0,0,0,0.04)",
+    ctaBg:"linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.08))",
+    footerBorder:"rgba(99,102,241,0.06)",barAlpha:"33",
+  },
+  dark: {
+    bg:"#0f0a1f",bgGrad:"linear-gradient(180deg,#0a0618 0%,#0f0a1f 30%)",
+    card:"rgba(99,102,241,0.04)",cardBorder:"rgba(99,102,241,0.15)",
+    text:"#e2e0f0",textSoft:"rgba(226,224,240,0.7)",textMuted:"rgba(226,224,240,0.4)",
+    headerBg:"rgba(15,10,31,0.85)",headerBorder:"rgba(139,92,246,0.15)",
+    inputBg:"rgba(0,0,0,0.3)",inputBorder:"rgba(99,102,241,0.2)",
+    inputText:"#e2e0f0",valueBg:"rgba(99,102,241,0.1)",valueText:"#c4b5fd",
+    tableBg:"rgba(99,102,241,0.03)",tableHead:"rgba(99,102,241,0.1)",
+    previewBg:"rgba(0,0,0,0.25)",barBg:"rgba(0,0,0,0.2)",
+    greenBg:"rgba(34,197,94,0.05)",greenBorder:"rgba(34,197,94,0.15)",
+    purpleBg:"rgba(139,92,246,0.06)",purpleBorder:"rgba(139,92,246,0.2)",
+    yellowBg:"rgba(245,158,11,0.04)",yellowBorder:"rgba(245,158,11,0.12)",
+    sliderTrack:"rgba(99,102,241,0.15)",rowBorder:"rgba(255,255,255,0.04)",
+    ctaBg:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12))",
+    footerBorder:"rgba(99,102,241,0.08)",barAlpha:"55",
+  }
+};
+
+const CALENDLY="https://calendly.com/regi-k-xbo/30min";
+
 const P = {
-  xbo:      {name:"XBO.emoney",       fx:0.003, txLocal:0, txIntl:0, mo:0, card:0, cryptoFx:0, recvFee:0, weekendFx:0, color:"#8b5cf6",icon:"\u{1F7E3}", hasCrypto:true,  note:"Crypto + fiat unified. SEPA/SWIFT."},
-  revolut:  {name:"Revolut Business",  fx:0.006, txLocal:0, txIntl:5, mo:35, card:0, cryptoFx:0.025, recvFee:0, weekendFx:0.01, color:"#0075EB",icon:"\u{1F535}", hasCrypto:false, note:"Grow plan. 0.6% FX beyond \u20AC17.5K/mo allowance."},
-  wise:     {name:"Wise Business",     fx:0.004, txLocal:0, txIntl:1.5, mo:0, card:3, cryptoFx:0, recvFee:0, weekendFx:0, color:"#9FE870",icon:"\u{1F7E2}", hasCrypto:false, note:"No monthly fee. ~0.4% avg conversion. \u20AC50 setup."},
-  airwallex:{name:"Airwallex",         fx:0.006, txLocal:0, txIntl:0, mo:22, card:0, cryptoFx:0, recvFee:0.003, weekendFx:0, color:"#FF6B35",icon:"\u{1F7E0}", hasCrypto:false, note:"Explore plan. 0.5% major, 1% minor FX. 0.3% recv fee."},
-  bank:     {name:"Traditional Bank",  fx:0.03,  txLocal:0.5, txIntl:20, mo:40, card:8, cryptoFx:0, recvFee:0, weekendFx:0, color:"#64748b",icon:"\u{1F3E6}", hasCrypto:false, note:"UK high-street avg. 2.5-4% FX markup."},
+  xbo:{name:"XBO.emoney",fx:0.003,txLocal:0,txIntl:0,mo:0,card:0,cryptoFx:0,recvFee:0,weekendFx:0,color:"#8b5cf6",icon:"\u{1F7E3}",hasCrypto:true,note:"Crypto + fiat unified. SEPA/SWIFT. No hidden fees."},
+  revolut:{name:"Revolut Business",fx:0.006,txLocal:0,txIntl:5,mo:35,card:0,cryptoFx:0.025,recvFee:0,weekendFx:0.01,color:"#0075EB",icon:"\u{1F535}",hasCrypto:false,note:"Grow plan. 0.6% FX beyond \u20AC17.5K/mo. 1% weekend surcharge."},
+  wise:{name:"Wise Business",fx:0.004,txLocal:0,txIntl:1.5,mo:0,card:3,cryptoFx:0,recvFee:0,weekendFx:0,color:"#9FE870",icon:"\u{1F7E2}",hasCrypto:false,note:"No monthly fee. ~0.4% avg FX conversion. \u20AC50 one-time setup."},
+  airwallex:{name:"Airwallex",fx:0.006,txLocal:0,txIntl:0,mo:22,card:0,cryptoFx:0,recvFee:0.003,weekendFx:0,color:"#FF6B35",icon:"\u{1F7E0}",hasCrypto:false,note:"Explore plan. 0.5% major / 1% minor FX. 0.3% receiving fee."},
+  bank:{name:"Traditional Bank",fx:0.03,txLocal:0.5,txIntl:20,mo:40,card:8,cryptoFx:0,recvFee:0,weekendFx:0,color:"#64748b",icon:"\u{1F3E6}",hasCrypto:false,note:"UK high-street composite (NatWest/Santander/HSBC)."},
 };
 
 function cd(p,intlTx,localTx,avg,cur,cards,cryptoVol){
-  const fxMult=Math.min(cur/3,1.5);
-  const fxCost=Math.round(intlTx*avg*p.fx*fxMult);
-  const intlTxCost=Math.round(intlTx*p.txIntl);
-  const localTxCost=Math.round(localTx*p.txLocal);
-  const mo=p.mo;
-  const cardCost=cards*p.card;
-  // Crypto conversion: if they convert crypto, XBO does it natively at 0% extra. Others need an external exchange (est 1.5-2.5% total cost via exchange+withdrawal)
-  const cryptoCost=cryptoVol>0&&!p.hasCrypto?Math.round(cryptoVol*0.02):cryptoVol>0&&p.hasCrypto?Math.round(cryptoVol*p.cryptoFx):0;
-  // Receiving fee (Airwallex charges 0.3% on third-party inbound)
-  const recvCost=Math.round(intlTx*avg*p.recvFee*0.5); // assume 50% of payments are from third parties
-  // Weekend FX surcharge (Revolut charges 1% on weekends, estimate 15% of txns happen on weekends)
-  const weekendCost=Math.round(intlTx*avg*p.weekendFx*0.15);
-  const total=fxCost+intlTxCost+localTxCost+mo+cardCost+cryptoCost+recvCost+weekendCost;
-  return{fxCost,intlTxCost,localTxCost,mo,cardCost,cryptoCost,recvCost,weekendCost,total};
+  const fm=Math.min(cur/3,1.5);
+  const fxC=Math.round(intlTx*avg*p.fx*fm);const itC=Math.round(intlTx*p.txIntl);const ltC=Math.round(localTx*p.txLocal);
+  const mo=p.mo;const cC=cards*p.card;
+  const crC=cryptoVol>0&&!p.hasCrypto?Math.round(cryptoVol*0.02):cryptoVol>0&&p.hasCrypto?Math.round(cryptoVol*p.cryptoFx):0;
+  const rC=Math.round(intlTx*avg*p.recvFee*0.5);const wC=Math.round(intlTx*avg*p.weekendFx*0.15);
+  return{fxCost:fxC,intlTxCost:itC,localTxCost:ltC,mo,cardCost:cC,cryptoCost:crC,recvCost:rC,weekendCost:wC,total:fxC+itC+ltC+mo+cC+crC+rC+wC};
 }
 
-function Sld({label,value,setValue,min,max,step:s,prefix,icon,sub}){
-  const[ed,setEd]=useState(false);
-  const[dr,setDr]=useState("");
-  const ref=useRef(null);
+function Sld({label,value,setValue,min,max,step:s,prefix,icon,sub,t}){
+  const[ed,setEd]=useState(false);const[dr,setDr]=useState("");const ref=useRef(null);
   const disp=prefix?`${prefix}${value.toLocaleString()}`:String(value);
   const startE=()=>{setDr(String(value));setEd(true);setTimeout(()=>ref.current?.select(),10)};
   const commit=()=>{const n=parseInt(dr.replace(/[^0-9]/g,""),10);if(!isNaN(n))setValue(Math.max(min,Math.min(max,n)));setEd(false)};
@@ -67,13 +89,13 @@ function Sld({label,value,setValue,min,max,step:s,prefix,icon,sub}){
   return(
     <div style={{marginBottom:22}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-        <div><span style={{fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{icon}</span>{label}</span>
-        {sub&&<div style={{fontSize:10,opacity:0.3,marginLeft:24,marginTop:2}}>{sub}</div>}</div>
+        <div><span style={{fontSize:13,fontWeight:600,color:t.text,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>{icon}</span>{label}</span>
+        {sub&&<div style={{fontSize:10,color:t.textMuted,marginLeft:24,marginTop:2}}>{sub}</div>}</div>
         {ed?(<input ref={ref} type="text" inputMode="numeric" value={dr} onChange={e=>setDr(e.target.value)} onBlur={commit} onKeyDown={onK} style={{width:110,textAlign:"right",fontSize:16,fontWeight:800,color:"#fff",background:"rgba(99,102,241,0.2)",border:"2px solid #8b5cf6",borderRadius:8,padding:"4px 10px",outline:"none",fontFamily:"inherit"}}/>
-        ):(<div onClick={startE} style={{minWidth:90,textAlign:"right",fontSize:16,fontWeight:800,color:"#c4b5fd",background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.25)",borderRadius:8,padding:"5px 12px",cursor:"text",userSelect:"none"}}>{disp}</div>)}
+        ):(<div onClick={startE} style={{minWidth:90,textAlign:"right",fontSize:16,fontWeight:800,color:t.valueText,background:t.valueBg,border:`1px solid ${t.cardBorder}`,borderRadius:8,padding:"5px 12px",cursor:"text",userSelect:"none"}}>{disp}</div>)}
       </div>
-      <input type="range" min={min} max={max} step={s||1} value={value} onChange={e=>setValue(Number(e.target.value))}/>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,opacity:0.2,marginTop:3}}>
+      <input type="range" min={min} max={max} step={s||1} value={value} onChange={e=>setValue(Number(e.target.value))} style={{background:t.sliderTrack}}/>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:t.textMuted,opacity:0.5,marginTop:3}}>
         <span>{prefix?`${prefix}${min.toLocaleString()}`:min}</span><span>{prefix?`${prefix}${max.toLocaleString()}`:max}</span>
       </div>
     </div>
@@ -81,44 +103,36 @@ function Sld({label,value,setValue,min,max,step:s,prefix,icon,sub}){
 }
 
 function App(){
+  const[mode,setMode]=useState("light");const t=themes[mode];
   const[step,setStep]=useState(0);
-  const[intlTx,setIntlTx]=useState(15);
-  const[localTx,setLocalTx]=useState(30);
-  const[avg,setAvg]=useState(3000);
-  const[cur,setCur]=useState(4);
-  const[crd,setCrd]=useState(3);
-  const[cryptoVol,setCryptoVol]=useState(0);
-  const[em,setEm]=useState("");
-  const[tg,setTg]=useState("");
+  const[intlTx,setIntlTx]=useState(15);const[localTx,setLocalTx]=useState(30);
+  const[avg,setAvg]=useState(3000);const[cur,setCur]=useState(4);
+  const[crd,setCrd]=useState(3);const[cryptoVol,setCryptoVol]=useState(5000);
 
   const all=Object.entries(P).map(([k,p])=>({key:k,...p,...cd(p,intlTx,localTx,avg,cur,crd,cryptoVol)})).sort((a,b)=>a.total-b.total);
-  const xbo=all.find(r=>r.key==="xbo");
-  const bank=all.find(r=>r.key==="bank");
-  const cheap=all[0];
-  const mx=Math.max(...all.map(r=>r.total),1);
-  const annSave=(bank.total-xbo.total)*12;
-  const moSave=bank.total-xbo.total;
-
-  const sb=[
-    {label:"Lower FX conversion rates",value:(bank.fxCost-xbo.fxCost)*12},
-    {label:"No per-transfer fees",value:((bank.intlTxCost+bank.localTxCost)-(xbo.intlTxCost+xbo.localTxCost))*12},
-    {label:"No monthly account fee",value:bank.mo*12},
-    {label:"Free team cards",value:(bank.cardCost-xbo.cardCost)*12},
-  ];
-  if(cryptoVol>0)sb.push({label:"Built-in crypto-to-fiat (no exchange fees)",value:(bank.cryptoCost-xbo.cryptoCost)*12});
-
+  const xbo=all.find(r=>r.key==="xbo");const bank=all.find(r=>r.key==="bank");
+  const cheap=all[0];const mx=Math.max(...all.map(r=>r.total),1);
+  const annSave=(bank.total-xbo.total)*12;const moSave=bank.total-xbo.total;
   const hasCrypto=cryptoVol>0;
 
+  const sb=[{label:"Lower FX conversion rates",value:(bank.fxCost-xbo.fxCost)*12},{label:"No per-transfer fees",value:((bank.intlTxCost+bank.localTxCost)-(xbo.intlTxCost+xbo.localTxCost))*12},{label:"No monthly account fee",value:bank.mo*12},{label:"Free team cards",value:(bank.cardCost-xbo.cardCost)*12}];
+  if(hasCrypto)sb.push({label:"Built-in crypto-to-fiat (no exchange fees)",value:(bank.cryptoCost-xbo.cryptoCost)*12});
+
+  const shareText=`I could save \u20AC${annSave.toLocaleString()}/year on business banking with XBO.emoney. Crypto + fiat in one regulated platform. Check it: https://xbo-emoney-calculator.vercel.app`;
+
   return(
-    <div style={{background:"linear-gradient(180deg,#0a0618 0%,#0f0a1f 30%,#0f0a1f 100%)",minHeight:"100vh"}}>
+    <div style={{background:t.bgGrad,color:t.text,minHeight:"100vh",transition:"all 0.3s"}}>
       {/* Header */}
-      <div style={{background:"rgba(15,10,31,0.85)",backdropFilter:"blur(20px)",borderBottom:"1px solid rgba(139,92,246,0.15)",padding:"12px 28px",position:"sticky",top:0,zIndex:20}}>
+      <div style={{background:t.headerBg,backdropFilter:"blur(20px)",borderBottom:`1px solid ${t.headerBorder}`,padding:"12px 28px",position:"sticky",top:0,zIndex:20}}>
         <div style={{maxWidth:800,margin:"0 auto",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:32,height:32,borderRadius:8,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#fff"}}>X</div>
-            <div><div style={{fontSize:14,fontWeight:800,letterSpacing:-0.3}}>XBO<span style={{color:"#a78bfa"}}>.emoney</span></div><div style={{fontSize:9,opacity:0.4,letterSpacing:0.5}}>FEE SAVINGS CALCULATOR</div></div>
+            <div><div style={{fontSize:14,fontWeight:800,letterSpacing:-0.3,color:t.text}}>XBO<span style={{color:"#8b5cf6"}}>.emoney</span></div><div style={{fontSize:9,color:t.textMuted,letterSpacing:0.5}}>FEE SAVINGS CALCULATOR</div></div>
           </div>
-          {step>0&&<button onClick={()=>setStep(0)} style={{fontSize:11,fontWeight:600,color:"#a78bfa",background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.2)",borderRadius:8,padding:"6px 14px",cursor:"pointer"}}>Edit inputs</button>}
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            {step===1&&<button onClick={()=>setStep(0)} style={{fontSize:11,fontWeight:600,color:"#8b5cf6",background:t.card,border:`1px solid ${t.cardBorder}`,borderRadius:8,padding:"6px 14px",cursor:"pointer"}}>Edit inputs</button>}
+            <button onClick={()=>setMode(mode==="light"?"dark":"light")} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:600,color:t.textSoft,background:t.card,border:`1px solid ${t.cardBorder}`,borderRadius:8,padding:"6px 12px",cursor:"pointer"}}>{mode==="light"?"\u{263E}":"\u{2600}"} {mode==="light"?"Dark":"Light"}</button>
+          </div>
         </div>
       </div>
 
@@ -128,219 +142,153 @@ function App(){
         {step===0&&(
           <div>
             <div style={{textAlign:"center",padding:"44px 0 16px"}}>
-              <div style={{display:"inline-block",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:20,padding:"4px 16px",fontSize:11,fontWeight:700,color:"#22c55e",marginBottom:16,letterSpacing:0.5}}>FREE TOOL</div>
-              <h1 style={{fontSize:32,fontWeight:900,lineHeight:1.15,letterSpacing:-0.5,margin:"0 0 12px"}}>How much are you<br/><span style={{background:"linear-gradient(90deg,#6366f1,#ec4899)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>overpaying</span> for business banking?</h1>
-              <p style={{fontSize:14,opacity:0.5,maxWidth:460,margin:"0 auto 28px"}}>Compare XBO.emoney against Revolut Business, Wise, Airwallex, and traditional banks with your real numbers.</p>
+              <div style={{display:"inline-block",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:20,padding:"4px 16px",fontSize:11,fontWeight:700,color:"#22c55e",marginBottom:16,letterSpacing:0.5}}>FREE TOOL / NO SIGN-UP NEEDED</div>
+              <h1 style={{fontSize:32,fontWeight:900,lineHeight:1.15,letterSpacing:-0.5,margin:"0 0 12px",color:t.text}}>How much are you<br/><span style={{background:"linear-gradient(90deg,#6366f1,#ec4899)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>overpaying</span> for business banking?</h1>
+              <p style={{fontSize:14,color:t.textSoft,maxWidth:460,margin:"0 auto 28px"}}>Enter your numbers. Get instant results. No email required.</p>
             </div>
 
-            {/* About XBO.emoney */}
-            <div style={{background:"linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.08))",border:"1px solid rgba(99,102,241,0.2)",borderRadius:16,padding:"22px 26px",marginBottom:28}}>
+            {/* About */}
+            <div style={{background:mode==="light"?"linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.06))":t.purpleBg,border:`1px solid ${t.purpleBorder}`,borderRadius:16,padding:"22px 26px",marginBottom:28}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
                 <div style={{width:34,height:34,borderRadius:10,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:"#fff"}}>X</div>
-                <div><div style={{fontSize:15,fontWeight:800}}>XBO.emoney</div><div style={{fontSize:11,opacity:0.4}}>EU-Regulated. Crypto + Fiat. One Platform.</div></div>
+                <div><div style={{fontSize:15,fontWeight:800,color:t.text}}>XBO.emoney</div><div style={{fontSize:11,color:t.textMuted}}>EU-Regulated. Crypto + Fiat. One Platform.</div></div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 {["30+ currency IBANs via SEPA, SWIFT, Faster Payments","Mastercard business cards with team controls","Instant crypto-to-fiat conversion (built in, not bolted on)","Bulk payments, payroll, and supplier payouts","The only platform where your crypto and fiat live together","EU regulated. Live and operational now."].map((f,i)=>(
-                  <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",fontSize:12,opacity:0.75}}><span style={{color:i===2||i===4?"#a78bfa":"#22c55e",flexShrink:0,marginTop:1}}>&#10003;</span>{f}</div>
+                  <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",fontSize:12,color:t.textSoft}}><span style={{color:i===2||i===4?"#8b5cf6":"#22c55e",flexShrink:0,marginTop:1}}>&#10003;</span>{f}</div>
                 ))}
               </div>
             </div>
 
             {/* Calculator */}
-            <div style={{background:"rgba(99,102,241,0.04)",border:"1px solid rgba(99,102,241,0.15)",borderRadius:20,padding:"28px 26px",boxShadow:"0 8px 40px rgba(0,0,0,0.3)"}}>
-              <h2 style={{fontSize:17,fontWeight:700,margin:"0 0 4px"}}>Your business details</h2>
-              <p style={{fontSize:11,opacity:0.35,margin:"0 0 24px"}}>Drag sliders or click numbers to type directly.</p>
+            <div style={{background:t.card,border:`1px solid ${t.cardBorder}`,borderRadius:20,padding:"28px 26px",boxShadow:"0 8px 40px rgba(0,0,0,0.08)"}}>
+              <h2 style={{fontSize:17,fontWeight:700,margin:"0 0 4px",color:t.text}}>Your business details</h2>
+              <p style={{fontSize:11,color:t.textMuted,margin:"0 0 24px"}}>Drag sliders or click numbers to type directly.</p>
 
-              <Sld icon={"\u{1F30D}"} label="International payments per month" value={intlTx} setValue={setIntlTx} min={1} max={200} sub="Cross-border transfers to suppliers, contractors, etc."/>
-              <Sld icon={"\u{1F3E0}"} label="Local/domestic payments per month" value={localTx} setValue={setLocalTx} min={0} max={500} sub="Same-country transfers (SEPA, Faster Payments, etc.)"/>
-              <Sld icon={"\u{1F4B6}"} label="Average payment size" value={avg} setValue={setAvg} min={100} max={100000} step={100} prefix={"\u20AC"}/>
-              <Sld icon={"\u{1F30E}"} label="Currencies you regularly use" value={cur} setValue={setCur} min={1} max={20}/>
-              <Sld icon={"\u{1F4B3}"} label="Team cards needed" value={crd} setValue={setCrd} min={0} max={30}/>
+              <Sld t={t} icon={"\u{1F30D}"} label="International payments per month" value={intlTx} setValue={setIntlTx} min={1} max={200} sub="Cross-border transfers to suppliers, contractors, etc."/>
+              <Sld t={t} icon={"\u{1F3E0}"} label="Local/domestic payments per month" value={localTx} setValue={setLocalTx} min={0} max={500} sub="Same-country transfers (SEPA, Faster Payments, etc.)"/>
+              <Sld t={t} icon={"\u{1F4B6}"} label="Average payment size" value={avg} setValue={setAvg} min={100} max={100000} step={100} prefix={"\u20AC"}/>
+              <Sld t={t} icon={"\u{1F30E}"} label="Currencies you regularly use" value={cur} setValue={setCur} min={1} max={20}/>
+              <Sld t={t} icon={"\u{1F4B3}"} label="Team cards needed" value={crd} setValue={setCrd} min={0} max={30}/>
 
-              {/* Crypto section - highlighted */}
-              <div style={{background:"linear-gradient(135deg,rgba(139,92,246,0.08),rgba(99,102,241,0.04))",border:"1px solid rgba(139,92,246,0.2)",borderRadius:16,padding:"20px 22px",marginBottom:24}}>
+              {/* Crypto */}
+              <div style={{background:t.purpleBg,border:`1px solid ${t.purpleBorder}`,borderRadius:16,padding:"20px 22px",marginBottom:24}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
                   <span style={{fontSize:16}}>{"\u{1F504}"}</span>
-                  <div>
-                    <div style={{fontSize:14,fontWeight:700,color:"#c4b5fd"}}>Crypto-to-Fiat Conversion</div>
-                    <div style={{fontSize:11,opacity:0.35}}>Only XBO.emoney offers this natively. Others require a separate crypto exchange.</div>
-                  </div>
+                  <div><div style={{fontSize:14,fontWeight:700,color:"#8b5cf6"}}>Crypto-to-Fiat Conversion</div><div style={{fontSize:11,color:t.textMuted}}>Only XBO.emoney offers this natively. Others need a separate exchange.</div></div>
                 </div>
-                <Sld icon={"\u{20BF}"} label="Monthly crypto-to-fiat volume" value={cryptoVol} setValue={setCryptoVol} min={0} max={500000} step={500} prefix={"\u20AC"} sub="How much crypto do you convert to fiat for business use?"/>
+                <Sld t={t} icon={"\u{20BF}"} label="Monthly crypto-to-fiat volume" value={cryptoVol} setValue={setCryptoVol} min={0} max={500000} step={500} prefix={"\u20AC"} sub="How much crypto do you convert to fiat for business use?"/>
                 {cryptoVol>0&&(
-                  <div style={{background:"rgba(139,92,246,0.1)",borderRadius:10,padding:"12px 16px",fontSize:12,lineHeight:1.7,color:"#c4b5fd"}}>
-                    <strong>With other providers:</strong> you'd withdraw crypto to an exchange, sell, wait for settlement, then transfer fiat to your business account. Typical cost: ~2% in exchange fees + withdrawal fees + time delays.<br/>
-                    <strong>With XBO.emoney:</strong> convert and spend from the same dashboard. Instant. One platform.
+                  <div style={{background:mode==="light"?"rgba(139,92,246,0.06)":"rgba(139,92,246,0.1)",borderRadius:10,padding:"12px 16px",fontSize:12,lineHeight:1.7,color:"#7c3aed"}}>
+                    <strong>Others:</strong> withdraw to exchange, sell, wait, transfer fiat. ~2% in total fees + delays.<br/>
+                    <strong>XBO.emoney:</strong> convert and spend from same dashboard. Instant. One platform.
                   </div>
                 )}
               </div>
 
-              {/* Live Preview */}
-              <div style={{background:"rgba(0,0,0,0.25)",borderRadius:14,padding:"18px 22px",marginBottom:22}}>
+              {/* Preview */}
+              <div style={{background:t.previewBg,borderRadius:14,padding:"18px 22px",marginBottom:22}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
-                  <div><div style={{fontSize:10,opacity:0.4,marginBottom:2}}>Your monthly volume</div><div style={{fontSize:20,fontWeight:800}}>{"\u20AC"}{(intlTx*avg+localTx*avg*0.3+cryptoVol).toLocaleString()}</div></div>
-                  <div style={{textAlign:"right"}}><div style={{fontSize:10,opacity:0.4,marginBottom:2}}>XBO.emoney saves you vs banks</div><div style={{fontSize:20,fontWeight:800,color:"#22c55e"}}>{"\u20AC"}{moSave.toLocaleString()}<span style={{fontSize:12,opacity:0.5}}>/mo</span></div></div>
+                  <div><div style={{fontSize:10,color:t.textMuted,marginBottom:2}}>Your monthly volume</div><div style={{fontSize:20,fontWeight:800,color:t.text}}>{"\u20AC"}{(intlTx*avg+localTx*avg*0.3+cryptoVol).toLocaleString()}</div></div>
+                  <div style={{textAlign:"right"}}><div style={{fontSize:10,color:t.textMuted,marginBottom:2}}>XBO saves you vs banks</div><div style={{fontSize:20,fontWeight:800,color:"#22c55e"}}>{"\u20AC"}{moSave.toLocaleString()}<span style={{fontSize:12,opacity:0.5}}>/mo</span></div></div>
                 </div>
                 <div style={{display:"flex",gap:5}}>
                   {all.map(r=>{const w=Math.max((r.total/mx)*100,5);const isX=r.key==="xbo";
-                    return(<div key={r.key} style={{flex:1,textAlign:"center"}}><div style={{height:55,display:"flex",alignItems:"flex-end",justifyContent:"center",marginBottom:3}}><div style={{width:"80%",height:`${w}%`,minHeight:5,background:isX?"linear-gradient(180deg,#6366f1,#8b5cf6)":`${r.color}55`,borderRadius:"3px 3px 0 0",transition:"height 0.4s"}}/></div><div style={{fontSize:9,fontWeight:700,opacity:isX?1:0.5,color:isX?"#a78bfa":undefined}}>{r.name.split(" ")[0]}</div><div style={{fontSize:10,fontWeight:800,color:isX?"#22c55e":undefined,opacity:isX?1:0.4}}>{"\u20AC"}{r.total}</div></div>);
+                    return(<div key={r.key} style={{flex:1,textAlign:"center"}}><div style={{height:55,display:"flex",alignItems:"flex-end",justifyContent:"center",marginBottom:3}}><div style={{width:"80%",height:`${w}%`,minHeight:5,background:isX?"linear-gradient(180deg,#6366f1,#8b5cf6)":`${r.color}${t.barAlpha}`,borderRadius:"3px 3px 0 0",transition:"height 0.4s"}}/></div><div style={{fontSize:9,fontWeight:700,color:isX?"#8b5cf6":t.textMuted}}>{r.name.split(" ")[0]}</div><div style={{fontSize:10,fontWeight:800,color:isX?"#22c55e":t.textSoft}}>{"\u20AC"}{r.total}</div></div>);
                   })}
                 </div>
-                <div style={{textAlign:"center",fontSize:9,opacity:0.25,marginTop:8}}>Estimated monthly fees by provider (lower is better)</div>
+                <div style={{textAlign:"center",fontSize:9,color:t.textMuted,marginTop:8}}>Estimated monthly fees by provider (lower is better)</div>
               </div>
 
-              <button onClick={()=>setStep(1)} style={{width:"100%",padding:"16px",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px rgba(99,102,241,0.4)"}}>See full savings breakdown</button>
+              <button onClick={()=>setStep(1)} style={{width:"100%",padding:"16px",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px rgba(99,102,241,0.3)"}}>See full breakdown</button>
             </div>
           </div>
         )}
 
-        {/* STEP 1: LEAD CAPTURE */}
+        {/* STEP 1: FULL RESULTS (no gate!) */}
         {step===1&&(
           <div style={{paddingTop:32}}>
-            <div style={{textAlign:"center",marginBottom:12}}>
-              <div style={{fontSize:11,fontWeight:600,opacity:0.4,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Estimated annual savings vs traditional banks</div>
-              <div style={{fontSize:56,fontWeight:900,color:"#22c55e",lineHeight:1,letterSpacing:-2}}>{"\u20AC"}{annSave.toLocaleString()}</div>
-              <div style={{fontSize:14,opacity:0.4,marginTop:6}}>{"\u20AC"}{moSave.toLocaleString()} every month back in your pocket</div>
-            </div>
-
-            {/* Savings breakdown */}
-            <div style={{background:"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:16,padding:"22px 26px",marginBottom:22,marginTop:24}}>
-              <h3 style={{fontSize:14,fontWeight:700,color:"#86efac",margin:"0 0 14px"}}>Where those savings come from</h3>
-              {sb.filter(s=>s.value>0).map((s,i,arr)=>(
-                <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<arr.length-1?"1px solid rgba(255,255,255,0.04)":"none"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,fontSize:13}}><span style={{color:"#22c55e"}}>&#10003;</span>{s.label}</div>
-                  <div style={{fontSize:14,fontWeight:800,color:"#22c55e"}}>{"\u20AC"}{s.value.toLocaleString()}<span style={{fontSize:10,opacity:0.5}}>/yr</span></div>
-                </div>
-              ))}
-              <div style={{display:"flex",justifyContent:"space-between",marginTop:10,paddingTop:10,borderTop:"1px solid rgba(34,197,94,0.2)"}}>
-                <span style={{fontSize:14,fontWeight:800}}>Total annual savings</span>
-                <span style={{fontSize:18,fontWeight:900,color:"#22c55e"}}>{"\u20AC"}{annSave.toLocaleString()}</span>
-              </div>
-            </div>
-
-            {/* Crypto callout */}
-            {hasCrypto&&(
-              <div style={{background:"rgba(139,92,246,0.06)",border:"1px solid rgba(139,92,246,0.2)",borderRadius:14,padding:"18px 22px",marginBottom:22}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#c4b5fd",marginBottom:6}}>Only XBO.emoney unifies crypto and fiat</div>
-                <div style={{fontSize:12,opacity:0.5,lineHeight:1.7}}>
-                  You're converting {"\u20AC"}{cryptoVol.toLocaleString()}/month in crypto. With Revolut, Wise, or Airwallex, you'd need a separate crypto exchange, pay ~2% in fees, and manually transfer the fiat. With XBO.emoney, it's one click from the same dashboard. No extra platform. No extra fees. No delays.
-                </div>
-              </div>
-            )}
-
-            {/* Blurred teaser */}
-            <div style={{position:"relative",marginBottom:24}}>
-              <div style={{filter:"blur(6px)",opacity:0.3,pointerEvents:"none"}}>
-                {all.map(r=>(<div key={r.key} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"rgba(99,102,241,0.05)",borderRadius:10,marginBottom:6}}><span style={{fontSize:14}}>{r.icon}</span><span style={{fontSize:12,fontWeight:600,flex:1}}>{r.name}</span><span style={{fontSize:13,fontWeight:800}}>{"\u20AC"}{r.total}/mo</span></div>))}
-              </div>
-              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                <div style={{background:"rgba(15,10,31,0.9)",borderRadius:12,padding:"12px 24px",fontSize:13,fontWeight:700,color:"#a78bfa",border:"1px solid rgba(99,102,241,0.3)"}}>Enter email to unlock full comparison</div>
-              </div>
-            </div>
-
-            {/* Lead form */}
-            <div style={{background:"rgba(99,102,241,0.06)",border:"1px solid rgba(99,102,241,0.2)",borderRadius:16,padding:26,boxShadow:"0 4px 30px rgba(0,0,0,0.2)"}}>
-              <h3 style={{fontSize:16,fontWeight:700,margin:"0 0 4px"}}>Unlock full provider comparison</h3>
-              <p style={{fontSize:12,opacity:0.4,margin:"0 0 18px"}}>See detailed costs across all 5 providers, including hidden fees.</p>
-              <div style={{marginBottom:14}}>
-                <label style={{fontSize:11,fontWeight:700,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.5,opacity:0.5}}>Email *</label>
-                <input type="email" value={em} onChange={e=>setEm(e.target.value)} placeholder="you@company.com" style={{width:"100%",padding:"14px 18px",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(99,102,241,0.2)",borderRadius:12,color:"#e2e0f0",fontSize:14,outline:"none",boxSizing:"border-box"}} onFocus={e=>e.target.style.borderColor="rgba(99,102,241,0.5)"} onBlur={e=>e.target.style.borderColor="rgba(99,102,241,0.2)"}/>
-              </div>
-              <div style={{marginBottom:22}}>
-                <label style={{fontSize:11,fontWeight:700,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.5,opacity:0.5}}>Telegram ID <span style={{opacity:0.4}}>(optional)</span></label>
-                <input type="text" value={tg} onChange={e=>setTg(e.target.value)} placeholder="@yourtelegram" style={{width:"100%",padding:"14px 18px",background:"rgba(0,0,0,0.3)",border:"1px solid rgba(99,102,241,0.2)",borderRadius:12,color:"#e2e0f0",fontSize:14,outline:"none",boxSizing:"border-box"}} onFocus={e=>e.target.style.borderColor="rgba(99,102,241,0.5)"} onBlur={e=>e.target.style.borderColor="rgba(99,102,241,0.2)"}/>
-              </div>
-              <button onClick={()=>{if(em.includes("@")){
-                const vol=intlTx*avg+localTx*avg*0.3+cryptoVol;
-                fetch("https://api.web3forms.com/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({access_key:"d39085f3-f191-4c7d-a28b-f5e71c850a40",subject:"New XBO.emoney Calculator Lead",from_name:"XBO.emoney Calculator",email:em,telegram:tg||"not provided",intl_payments_per_month:intlTx,local_payments_per_month:localTx,avg_payment_size:"\u20AC"+avg.toLocaleString(),currencies_used:cur,team_cards:crd,crypto_monthly_volume:"\u20AC"+cryptoVol.toLocaleString(),total_monthly_volume:"\u20AC"+Math.round(vol).toLocaleString(),estimated_annual_savings:"\u20AC"+annSave.toLocaleString(),xbo_monthly_cost:"\u20AC"+xbo.total.toLocaleString(),bank_monthly_cost:"\u20AC"+bank.total.toLocaleString(),uses_crypto:cryptoVol>0?"Yes":"No"})}).catch(()=>{});setStep(2)}}} disabled={!em.includes("@")} style={{width:"100%",padding:16,background:em.includes("@")?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(99,102,241,0.15)",color:em.includes("@")?"#fff":"#666",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:em.includes("@")?"pointer":"not-allowed",boxShadow:em.includes("@")?"0 4px 20px rgba(99,102,241,0.4)":"none"}}>Show full comparison</button>
-              <p style={{fontSize:10,opacity:0.25,textAlign:"center",marginTop:10}}>We'll only use this to send you your results. No spam.</p>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 2: FULL RESULTS */}
-        {step===2&&(
-          <div style={{paddingTop:32}}>
-            {/* Hero */}
-            <div style={{background:"linear-gradient(135deg,rgba(34,197,94,0.08),rgba(34,197,94,0.02))",border:"1px solid rgba(34,197,94,0.2)",borderRadius:20,padding:"28px 26px",textAlign:"center",marginBottom:28}}>
-              <div style={{fontSize:11,fontWeight:700,opacity:0.4,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Your estimated annual savings with XBO.emoney</div>
+            {/* Hero savings */}
+            <div style={{background:t.greenBg,border:`1px solid ${t.greenBorder}`,borderRadius:20,padding:"28px 26px",textAlign:"center",marginBottom:28}}>
+              <div style={{fontSize:11,fontWeight:700,color:t.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Your estimated annual savings with XBO.emoney</div>
               <div style={{fontSize:58,fontWeight:900,color:"#22c55e",lineHeight:1,letterSpacing:-2}}>{"\u20AC"}{annSave.toLocaleString()}</div>
-              <div style={{fontSize:13,opacity:0.5,marginTop:6}}>{"\u20AC"}{moSave.toLocaleString()}/month saved vs traditional banks</div>
+              <div style={{fontSize:13,color:t.textSoft,marginTop:6}}>{"\u20AC"}{moSave.toLocaleString()}/month saved vs traditional banks</div>
               <div style={{marginTop:20,textAlign:"left",maxWidth:480,margin:"20px auto 0"}}>
                 {sb.filter(s=>s.value>0).map((s,i)=>(
-                  <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.04)",fontSize:12}}>
-                    <span style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:"#22c55e"}}>&#10003;</span>{s.label}</span>
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:`1px solid ${t.rowBorder}`,fontSize:12}}>
+                    <span style={{display:"flex",alignItems:"center",gap:8,color:t.text}}><span style={{color:"#22c55e"}}>&#10003;</span>{s.label}</span>
                     <span style={{fontWeight:800,color:"#22c55e"}}>{"\u20AC"}{s.value.toLocaleString()}/yr</span>
                   </div>
                 ))}
               </div>
+              <a href={CALENDLY} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:20,padding:"12px 32px",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",borderRadius:12,fontSize:14,fontWeight:700,textDecoration:"none",boxShadow:"0 4px 16px rgba(99,102,241,0.3)"}}>Book a free call to claim these savings</a>
             </div>
 
-            {/* Crypto+Fiat callout */}
+            {/* Crypto callout */}
             {hasCrypto&&(
-              <div style={{background:"linear-gradient(135deg,rgba(139,92,246,0.08),rgba(99,102,241,0.04))",border:"1px solid rgba(139,92,246,0.25)",borderRadius:16,padding:"20px 24px",marginBottom:28,textAlign:"center"}}>
-                <div style={{fontSize:15,fontWeight:800,color:"#c4b5fd",marginBottom:8}}>Crypto + Fiat Under One Roof</div>
-                <div style={{fontSize:13,opacity:0.5,lineHeight:1.7,maxWidth:500,margin:"0 auto"}}>
-                  You convert {"\u20AC"}{cryptoVol.toLocaleString()}/month in crypto to fiat. With XBO.emoney, this happens inside the same platform where your IBANs, cards, and payments live. No external exchange. No withdrawal delays. No extra 2% in fees.
+              <div style={{background:t.purpleBg,border:`1px solid ${t.purpleBorder}`,borderRadius:16,padding:"20px 24px",marginBottom:28,textAlign:"center"}}>
+                <div style={{fontSize:15,fontWeight:800,color:"#8b5cf6",marginBottom:8}}>Crypto + Fiat Under One Roof</div>
+                <div style={{fontSize:13,color:t.textSoft,lineHeight:1.7,maxWidth:500,margin:"0 auto"}}>
+                  You convert {"\u20AC"}{cryptoVol.toLocaleString()}/month in crypto. With XBO.emoney, this happens inside the same platform where your IBANs, cards, and payments live.
                 </div>
                 <div style={{display:"flex",justifyContent:"center",gap:16,marginTop:16}}>
-                  <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:900,color:"#ef4444"}}>{"\u20AC"}{Math.round(cryptoVol*0.02).toLocaleString()}</div><div style={{fontSize:10,opacity:0.4}}>Monthly cost via external exchange</div></div>
-                  <div style={{fontSize:20,opacity:0.3,display:"flex",alignItems:"center"}}>vs</div>
-                  <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:900,color:"#22c55e"}}>{"\u20AC"}{Math.round(cryptoVol*0).toLocaleString()}</div><div style={{fontSize:10,opacity:0.4}}>Cost with XBO.emoney (built-in)</div></div>
+                  <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:900,color:"#ef4444"}}>{"\u20AC"}{Math.round(cryptoVol*0.02).toLocaleString()}</div><div style={{fontSize:10,color:t.textMuted}}>Cost via external exchange</div></div>
+                  <div style={{fontSize:20,color:t.textMuted,display:"flex",alignItems:"center"}}>vs</div>
+                  <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:900,color:"#22c55e"}}>{"\u20AC"}0</div><div style={{fontSize:10,color:t.textMuted}}>Built into XBO.emoney</div></div>
                 </div>
               </div>
             )}
 
             {/* Provider cards */}
-            <h3 style={{fontSize:17,fontWeight:800,margin:"0 0 14px"}}>Monthly cost by provider</h3>
+            <h3 style={{fontSize:17,fontWeight:800,margin:"0 0 14px",color:t.text}}>Monthly cost by provider</h3>
             <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
               {all.map(r=>{const w=Math.max((r.total/mx)*100,6);const isX=r.key==="xbo";const isC=r.key===cheap.key;
                 return(
-                  <div key={r.key} style={{background:isX?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.02)",border:`1px solid ${isX?"rgba(99,102,241,0.3)":"rgba(99,102,241,0.08)"}`,borderRadius:14,padding:"14px 18px"}}>
+                  <div key={r.key} style={{background:isX?t.purpleBg:t.card,border:`1px solid ${isX?t.purpleBorder:t.cardBorder}`,borderRadius:14,padding:"14px 18px"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
                         <span style={{fontSize:16}}>{r.icon}</span>
                         <div>
-                          <span style={{fontSize:13,fontWeight:isX?800:600,color:isX?"#c4b5fd":undefined}}>{r.name}</span>
+                          <span style={{fontSize:13,fontWeight:isX?800:600,color:isX?"#8b5cf6":t.text}}>{r.name}</span>
                           {isC&&<span style={{marginLeft:8,fontSize:9,fontWeight:700,background:"rgba(34,197,94,0.15)",color:"#22c55e",padding:"2px 8px",borderRadius:6}}>LOWEST COST</span>}
-                          {isX&&hasCrypto&&<span style={{marginLeft:6,fontSize:9,fontWeight:700,background:"rgba(139,92,246,0.15)",color:"#a78bfa",padding:"2px 8px",borderRadius:6}}>CRYPTO+FIAT</span>}
-                          {!r.hasCrypto&&hasCrypto&&!isX&&<span style={{marginLeft:6,fontSize:9,fontWeight:600,opacity:0.3}}>no crypto support</span>}
+                          {isX&&hasCrypto&&<span style={{marginLeft:6,fontSize:9,fontWeight:700,background:"rgba(139,92,246,0.15)",color:"#8b5cf6",padding:"2px 8px",borderRadius:6}}>CRYPTO+FIAT</span>}
+                          {!r.hasCrypto&&hasCrypto&&!isX&&<span style={{marginLeft:6,fontSize:9,fontWeight:600,color:t.textMuted}}>no crypto</span>}
                         </div>
                       </div>
-                      <span style={{fontSize:18,fontWeight:900,color:isC?"#22c55e":"#e2e0f0"}}>{"\u20AC"}{r.total.toLocaleString()}<span style={{fontSize:11,opacity:0.4,fontWeight:500}}>/mo</span></span>
+                      <span style={{fontSize:18,fontWeight:900,color:isC?"#22c55e":t.text}}>{"\u20AC"}{r.total.toLocaleString()}<span style={{fontSize:11,color:t.textMuted,fontWeight:500}}>/mo</span></span>
                     </div>
-                    <div style={{width:"100%",height:7,background:"rgba(0,0,0,0.2)",borderRadius:4}}>
-                      <div style={{width:`${w}%`,height:"100%",background:isX?"linear-gradient(90deg,#6366f1,#22c55e)":`${r.color}66`,borderRadius:4,transition:"width 0.6s ease"}}/>
+                    <div style={{width:"100%",height:7,background:t.barBg,borderRadius:4}}>
+                      <div style={{width:`${w}%`,height:"100%",background:isX?"linear-gradient(90deg,#6366f1,#22c55e)":`${r.color}66`,borderRadius:4,transition:"width 0.6s"}}/>
                     </div>
-                    <div style={{fontSize:10,opacity:0.35,marginTop:5}}>{r.note}</div>
+                    <div style={{fontSize:10,color:t.textMuted,marginTop:5}}>{r.note}</div>
                   </div>
                 );
               })}
             </div>
 
-            {/* Full breakdown table */}
-            <h3 style={{fontSize:17,fontWeight:800,margin:"0 0 12px"}}>Full cost breakdown</h3>
-            <div style={{borderRadius:14,overflow:"hidden",border:"1px solid rgba(99,102,241,0.2)",marginBottom:28}}>
+            {/* Full breakdown */}
+            <h3 style={{fontSize:17,fontWeight:800,margin:"0 0 12px",color:t.text}}>Full cost breakdown</h3>
+            <div style={{borderRadius:14,overflow:"hidden",border:`1px solid ${t.cardBorder}`,marginBottom:28}}>
               <div style={{overflowX:"auto"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,minWidth:600}}>
-                <thead><tr style={{background:"rgba(99,102,241,0.1)"}}>
-                  {["Provider","FX Costs","Intl Transfers","Local Transfers","Monthly Fee","Cards",hasCrypto?"Crypto Conv":null,"Hidden Fees","Total/mo"].filter(Boolean).map((h,i)=>(
-                    <th key={i} style={{padding:"10px 10px",textAlign:i===0?"left":"right",fontWeight:700,fontSize:10,textTransform:"uppercase",letterSpacing:0.3,opacity:0.5,whiteSpace:"nowrap"}}>{h}</th>
+                <thead><tr style={{background:t.tableHead}}>
+                  {["Provider","FX","Intl Tx","Local Tx","Monthly","Cards",hasCrypto?"Crypto":null,"Hidden","Total/mo"].filter(Boolean).map((h,i)=>(
+                    <th key={i} style={{padding:"10px 8px",textAlign:i===0?"left":"right",fontWeight:700,fontSize:10,textTransform:"uppercase",letterSpacing:0.3,color:t.textMuted,whiteSpace:"nowrap"}}>{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>
-                  {all.map(r=>{const isX=r.key==="xbo";const isC=r.key===cheap.key;const hidden=r.recvCost+r.weekendCost;
+                  {all.map(r=>{const isX=r.key==="xbo";const isC=r.key===cheap.key;const hid=r.recvCost+r.weekendCost;
                     return(
-                      <tr key={r.key} style={{borderBottom:"1px solid rgba(255,255,255,0.03)",background:isX?"rgba(99,102,241,0.06)":"transparent"}}>
-                        <td style={{padding:"10px",fontWeight:isX?800:600,color:isX?"#c4b5fd":undefined,whiteSpace:"nowrap"}}>{r.icon} {r.name}</td>
-                        <td style={{padding:"10px",textAlign:"right",opacity:0.7}}>{"\u20AC"}{r.fxCost.toLocaleString()}</td>
-                        <td style={{padding:"10px",textAlign:"right",opacity:0.7}}>{"\u20AC"}{r.intlTxCost.toLocaleString()}</td>
-                        <td style={{padding:"10px",textAlign:"right",opacity:0.7}}>{"\u20AC"}{r.localTxCost.toLocaleString()}</td>
-                        <td style={{padding:"10px",textAlign:"right",opacity:0.7}}>{"\u20AC"}{r.mo}</td>
-                        <td style={{padding:"10px",textAlign:"right",opacity:0.7}}>{"\u20AC"}{r.cardCost}</td>
-                        {hasCrypto&&<td style={{padding:"10px",textAlign:"right",opacity:0.7,color:r.cryptoCost>0?"#fca5a5":r.hasCrypto?"#22c55e":undefined,fontWeight:r.hasCrypto?700:400}}>{r.hasCrypto?"\u20AC0 (built-in)":`\u20AC${r.cryptoCost.toLocaleString()}`}</td>}
-                        <td style={{padding:"10px",textAlign:"right",opacity:hidden>0?0.7:0.3,color:hidden>0?"#fca5a5":undefined}}>{hidden>0?`\u20AC${hidden.toLocaleString()}`:"-"}</td>
-                        <td style={{padding:"10px",textAlign:"right",fontWeight:900,fontSize:13,color:isC?"#22c55e":"#e2e0f0"}}>{"\u20AC"}{r.total.toLocaleString()}</td>
+                      <tr key={r.key} style={{borderBottom:`1px solid ${t.rowBorder}`,background:isX?t.purpleBg:"transparent"}}>
+                        <td style={{padding:"10px 8px",fontWeight:isX?800:600,color:isX?"#8b5cf6":t.text,whiteSpace:"nowrap"}}>{r.icon} {r.name}</td>
+                        <td style={{padding:"10px 8px",textAlign:"right",color:t.textSoft}}>{"\u20AC"}{r.fxCost.toLocaleString()}</td>
+                        <td style={{padding:"10px 8px",textAlign:"right",color:t.textSoft}}>{"\u20AC"}{r.intlTxCost.toLocaleString()}</td>
+                        <td style={{padding:"10px 8px",textAlign:"right",color:t.textSoft}}>{"\u20AC"}{r.localTxCost.toLocaleString()}</td>
+                        <td style={{padding:"10px 8px",textAlign:"right",color:t.textSoft}}>{"\u20AC"}{r.mo}</td>
+                        <td style={{padding:"10px 8px",textAlign:"right",color:t.textSoft}}>{"\u20AC"}{r.cardCost}</td>
+                        {hasCrypto&&<td style={{padding:"10px 8px",textAlign:"right",color:r.hasCrypto?"#22c55e":r.cryptoCost>0?"#ef4444":t.textMuted,fontWeight:r.hasCrypto?700:400}}>{r.hasCrypto?"\u20AC0":r.cryptoCost>0?`\u20AC${r.cryptoCost.toLocaleString()}`:"-"}</td>}
+                        <td style={{padding:"10px 8px",textAlign:"right",color:hid>0?"#f59e0b":t.textMuted}}>{hid>0?`\u20AC${hid.toLocaleString()}`:"-"}</td>
+                        <td style={{padding:"10px 8px",textAlign:"right",fontWeight:900,fontSize:13,color:isC?"#22c55e":t.text}}>{"\u20AC"}{r.total.toLocaleString()}</td>
                       </tr>
                     );
                   })}
@@ -349,71 +297,79 @@ function App(){
               </div>
             </div>
 
-            {/* Hidden fees explainer */}
-            <div style={{background:"rgba(245,158,11,0.04)",border:"1px solid rgba(245,158,11,0.12)",borderRadius:14,padding:"16px 20px",marginBottom:28}}>
-              <h4 style={{fontSize:12,fontWeight:700,color:"#fbbf24",margin:"0 0 8px",textTransform:"uppercase",letterSpacing:0.5}}>About hidden fees</h4>
-              <div style={{fontSize:11,opacity:0.45,lineHeight:1.7}}>
-                <strong>Revolut weekend FX:</strong> 1% surcharge on currency conversions made outside market hours. We estimate ~15% of transactions happen on weekends.<br/>
-                <strong>Airwallex receiving fee:</strong> 0.3% on payments received from accounts not in your name. We estimate ~50% of inbound payments are from third parties.<br/>
-                <strong>Traditional banks:</strong> intermediary/correspondent bank fees (typically {"\u20AC"}8-25 per SWIFT transfer) not included above. Actual bank costs may be higher.<br/>
-                <strong>XBO.emoney:</strong> no hidden fees. SEPA, SWIFT, Faster Payments supported. Competitive FX rates. No weekend surcharges.
+            {/* Hidden fees */}
+            <div style={{background:t.yellowBg,border:`1px solid ${t.yellowBorder}`,borderRadius:14,padding:"16px 20px",marginBottom:24}}>
+              <h4 style={{fontSize:12,fontWeight:700,color:"#f59e0b",margin:"0 0 8px",textTransform:"uppercase",letterSpacing:0.5}}>About hidden fees</h4>
+              <div style={{fontSize:11,color:t.textSoft,lineHeight:1.7}}>
+                <strong>Revolut weekend FX:</strong> 1% surcharge outside market hours (~15% of transactions).<br/>
+                <strong>Airwallex receiving fee:</strong> 0.3% on third-party inbound payments (~50% of inbound).<br/>
+                <strong>Banks:</strong> intermediary fees ({"\u20AC"}8-25/SWIFT) not included. Actual costs likely higher.<br/>
+                <strong>XBO.emoney:</strong> no hidden fees. No weekend surcharges. Competitive FX rates.
               </div>
             </div>
 
             {/* Fee assumptions */}
-            <div style={{background:"rgba(99,102,241,0.03)",border:"1px solid rgba(99,102,241,0.1)",borderRadius:14,padding:"16px 20px",marginBottom:28}}>
-              <h4 style={{fontSize:11,fontWeight:700,opacity:0.4,margin:"0 0 8px",textTransform:"uppercase",letterSpacing:0.5}}>Fee assumptions used</h4>
+            <div style={{background:t.tableBg,border:`1px solid ${t.cardBorder}`,borderRadius:14,padding:"16px 20px",marginBottom:24}}>
+              <h4 style={{fontSize:11,fontWeight:700,color:t.textMuted,margin:"0 0 8px",textTransform:"uppercase",letterSpacing:0.5}}>Fee assumptions</h4>
               <div style={{borderRadius:8,overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:10}}>
-                  <thead><tr style={{background:"rgba(99,102,241,0.06)"}}>
-                    {["Provider","FX Rate","Intl Transfer","Monthly","Card Fee","Source"].map((h,i)=>(<th key={i} style={{padding:"7px 8px",textAlign:i===0||i===5?"left":"right",fontWeight:700,opacity:0.5}}>{h}</th>))}
+                  <thead><tr style={{background:t.tableHead}}>
+                    {["Provider","FX","Intl Transfer","Monthly","Card","Plan"].map((h,i)=>(<th key={i} style={{padding:"7px 8px",textAlign:i===0||i===5?"left":"right",fontWeight:700,color:t.textMuted}}>{h}</th>))}
                   </tr></thead>
                   <tbody>
-                    {Object.entries(P).map(([k,p])=>(<tr key={k} style={{borderBottom:"1px solid rgba(255,255,255,0.02)"}}>
-                      <td style={{padding:"6px 8px",fontWeight:k==="xbo"?700:400,color:k==="xbo"?"#c4b5fd":undefined}}>{p.icon} {p.name}</td>
-                      <td style={{padding:"6px 8px",textAlign:"right",opacity:0.5}}>{(p.fx*100).toFixed(1)}%</td>
-                      <td style={{padding:"6px 8px",textAlign:"right",opacity:0.5}}>{p.txIntl===0?"Free":`\u20AC${p.txIntl}`}</td>
-                      <td style={{padding:"6px 8px",textAlign:"right",opacity:0.5}}>{p.mo===0?"Free":`\u20AC${p.mo}`}</td>
-                      <td style={{padding:"6px 8px",textAlign:"right",opacity:0.5}}>{p.card===0?"Free":`\u20AC${p.card}`}</td>
-                      <td style={{padding:"6px 8px",opacity:0.3,fontSize:9}}>{k==="revolut"?"Grow plan":k==="airwallex"?"Explore plan":k==="wise"?"Standard":k==="bank"?"UK avg":k==="xbo"?"Standard tier":""}</td>
+                    {Object.entries(P).map(([k,p])=>(<tr key={k} style={{borderBottom:`1px solid ${t.rowBorder}`}}>
+                      <td style={{padding:"6px 8px",fontWeight:k==="xbo"?700:400,color:k==="xbo"?"#8b5cf6":t.text}}>{p.icon} {p.name}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:t.textSoft}}>{(p.fx*100).toFixed(1)}%</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:t.textSoft}}>{p.txIntl===0?"Free":`\u20AC${p.txIntl}`}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:t.textSoft}}>{p.mo===0?"Free":`\u20AC${p.mo}`}</td>
+                      <td style={{padding:"6px 8px",textAlign:"right",color:t.textSoft}}>{p.card===0?"Free":`\u20AC${p.card}`}</td>
+                      <td style={{padding:"6px 8px",color:t.textMuted,fontSize:9}}>{k==="revolut"?"Grow":k==="airwallex"?"Explore":k==="wise"?"Standard":k==="bank"?"UK avg":"Standard"}</td>
                     </tr>))}
                   </tbody>
                 </table>
               </div>
-              <p style={{fontSize:9,opacity:0.25,marginTop:6,lineHeight:1.5}}>Based on publicly available pricing as of early 2026. Revolut Grow (most common SME plan): {"\u00A3"}30/mo, 0.6% FX beyond {"\u00A3"}15K allowance, {"\u00A3"}5/intl transfer. Wise: no monthly, ~0.4% avg FX. Airwallex Explore: {"\u00A3"}0-19/mo, 0.5-1% FX, 0.3% receiving. Banks: composite NatWest/Santander/HSBC averages.</p>
+              <p style={{fontSize:9,color:t.textMuted,marginTop:6,lineHeight:1.5}}>Based on publicly available pricing, early 2026. Revolut Grow: {"\u00A3"}30/mo, 0.6% FX beyond allowance. Wise: ~0.4% avg FX. Airwallex Explore: 0.5-1% FX, 0.3% recv fee. Banks: NatWest/Santander/HSBC composite.</p>
             </div>
 
-            {/* Input summary */}
-            <div style={{background:"rgba(99,102,241,0.03)",border:"1px solid rgba(99,102,241,0.1)",borderRadius:14,padding:"16px 20px",marginBottom:28}}>
-              <h4 style={{fontSize:11,fontWeight:700,opacity:0.4,margin:"0 0 10px",textTransform:"uppercase",letterSpacing:0.5}}>Calculated based on</h4>
+            {/* Inputs summary */}
+            <div style={{background:t.tableBg,border:`1px solid ${t.cardBorder}`,borderRadius:14,padding:"16px 20px",marginBottom:28}}>
+              <h4 style={{fontSize:11,fontWeight:700,color:t.textMuted,margin:"0 0 10px",textTransform:"uppercase",letterSpacing:0.5}}>Calculated based on</h4>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
                 {[{l:"Intl payments/mo",v:intlTx},{l:"Local payments/mo",v:localTx},{l:"Avg payment size",v:`\u20AC${avg.toLocaleString()}`},{l:"Currencies",v:cur},{l:"Team cards",v:crd},{l:"Crypto-to-fiat/mo",v:cryptoVol>0?`\u20AC${cryptoVol.toLocaleString()}`:"None"}].map((item,i)=>(
-                  <div key={i}><div style={{fontSize:10,opacity:0.3}}>{item.l}</div><div style={{fontSize:13,fontWeight:700}}>{item.v}</div></div>
+                  <div key={i}><div style={{fontSize:10,color:t.textMuted}}>{item.l}</div><div style={{fontSize:13,fontWeight:700,color:t.text}}>{item.v}</div></div>
                 ))}
               </div>
             </div>
 
-            {/* CTA */}
-            <div style={{background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.12))",border:"1px solid rgba(99,102,241,0.3)",borderRadius:20,padding:"32px 26px",textAlign:"center"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:14}}>
-                <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"#fff"}}>X</div>
-                <div style={{fontSize:20,fontWeight:900}}>XBO<span style={{color:"#a78bfa"}}>.emoney</span></div>
-              </div>
-              <h3 style={{fontSize:20,fontWeight:800,margin:"0 0 6px"}}>Save {"\u20AC"}{annSave.toLocaleString()} this year</h3>
-              <p style={{fontSize:12,opacity:0.5,margin:"0 0 8px"}}>30+ currency IBANs. Mastercard cards. EU regulated. Already live.</p>
-              {hasCrypto&&<p style={{fontSize:12,color:"#c4b5fd",margin:"0 0 20px",fontWeight:600}}>The only platform where your crypto and fiat live together.</p>}
-              {!hasCrypto&&<div style={{height:12}}/>}
-              <a href="https://xbo.com/en/emoney" target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"14px 44px",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",borderRadius:14,fontSize:16,fontWeight:700,textDecoration:"none",cursor:"pointer",boxShadow:"0 4px 20px rgba(99,102,241,0.4)"}}>Request Access Now</a>
-              <p style={{fontSize:11,opacity:0.3,marginTop:10}}>Takes 2 minutes. No commitment.</p>
+            {/* Share */}
+            <div style={{display:"flex",gap:10,marginBottom:28}}>
+              <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"12px",background:t.card,border:`1px solid ${t.cardBorder}`,borderRadius:12,fontSize:12,fontWeight:600,color:t.text,textDecoration:"none",cursor:"pointer"}}>Share on X</a>
+              <a href={`https://www.linkedin.com/sharing/share-offsite/?url=https://xbo-emoney-calculator.vercel.app`} target="_blank" rel="noopener noreferrer" style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"12px",background:t.card,border:`1px solid ${t.cardBorder}`,borderRadius:12,fontSize:12,fontWeight:600,color:t.text,textDecoration:"none",cursor:"pointer"}}>Share on LinkedIn</a>
+              <button onClick={()=>{navigator.clipboard.writeText("https://xbo-emoney-calculator.vercel.app")}} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"12px",background:t.card,border:`1px solid ${t.cardBorder}`,borderRadius:12,fontSize:12,fontWeight:600,color:t.text,cursor:"pointer"}}>Copy Link</button>
             </div>
 
-            <p style={{fontSize:9,opacity:0.2,textAlign:"center",lineHeight:1.6,marginTop:20}}>Estimates based on publicly available fee structures and industry averages (early 2026). Actual costs vary by plan, volume, and provider. XBO.emoney fees reflect standard tier. For illustrative purposes only, not financial advice.</p>
+            {/* CTA: Book a Call */}
+            <div style={{background:t.ctaBg,border:`1px solid ${t.purpleBorder}`,borderRadius:20,padding:"32px 26px",textAlign:"center"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:14}}>
+                <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"#fff"}}>X</div>
+                <div style={{fontSize:20,fontWeight:900,color:t.text}}>XBO<span style={{color:"#8b5cf6"}}>.emoney</span></div>
+              </div>
+              <h3 style={{fontSize:22,fontWeight:800,margin:"0 0 8px",color:t.text}}>Ready to save {"\u20AC"}{annSave.toLocaleString()}/year?</h3>
+              <p style={{fontSize:13,color:t.textSoft,margin:"0 0 4px"}}>Talk to our team. 30-minute call. No commitment.</p>
+              <p style={{fontSize:12,color:t.textMuted,margin:"0 0 24px"}}>We'll walk you through the platform, answer your questions, and help you get set up.</p>
+              {hasCrypto&&<p style={{fontSize:12,color:"#8b5cf6",margin:"0 0 20px",fontWeight:600}}>The only platform where your crypto and fiat live together.</p>}
+              <a href={CALENDLY} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"16px 48px",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",borderRadius:14,fontSize:17,fontWeight:700,textDecoration:"none",boxShadow:"0 4px 20px rgba(99,102,241,0.3)",marginBottom:8}}>Book a Free Call</a>
+              <p style={{fontSize:12,color:t.textMuted,marginTop:10}}>or explore the platform directly</p>
+              <a href="https://xbo.com/en/emoney" target="_blank" rel="noopener noreferrer" style={{fontSize:14,fontWeight:700,color:"#8b5cf6",textDecoration:"none"}}>xbo.com/emoney</a>
+            </div>
+
+            <p style={{fontSize:9,color:t.textMuted,textAlign:"center",lineHeight:1.6,marginTop:20}}>Estimates based on publicly available fee structures (early 2026). Actual costs vary by plan, volume, and provider. XBO.emoney fees reflect standard tier. For illustrative purposes only, not financial advice.</p>
           </div>
         )}
       </div>
 
-      <div style={{borderTop:"1px solid rgba(99,102,241,0.08)",padding:"18px 28px",textAlign:"center"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:0.25,fontSize:11}}>
+      <div style={{borderTop:`1px solid ${t.footerBorder}`,padding:"18px 28px",textAlign:"center"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:t.textMuted,fontSize:11}}>
           <div style={{width:16,height:16,borderRadius:4,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:900,color:"#fff"}}>X</div>
           <span>Powered by XBO.com</span>
         </div>
